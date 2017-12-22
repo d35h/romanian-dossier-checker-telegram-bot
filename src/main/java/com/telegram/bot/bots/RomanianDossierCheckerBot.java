@@ -1,7 +1,9 @@
 package com.telegram.bot.bots;
 
-import java.util.List;
+import static com.telegram.bot.utils.MessageUtils.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,13 +21,13 @@ import com.telegram.bot.services.RomanianDossierCheckerService;
 @Service
 public class RomanianDossierCheckerBot extends TelegramLongPollingBot {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RomanianDossierCheckerBot.class);
+
     private final String pdfTelegramBotName;
 
     private final String pdfTelegramBotToken;
 
     private final RomanianDossierCheckerService romanianDossierCheckerService;
-
-    private static final String START_COMMAND = "/start";
 
     @Autowired
     public RomanianDossierCheckerBot(@Value("${settings.bot.name}") String pdfTelegramBotName,
@@ -60,28 +62,30 @@ public class RomanianDossierCheckerBot extends TelegramLongPollingBot {
     private void handleRequests(Update update) {
         switch(update.getMessage().getText()) {
             case START_COMMAND:
-                sendMessageBack(romanianDossierCheckerService.prepareMessage(update.getMessage().getChatId(), "Willkommen doamna si domnule, \n\nI am here to check state of your dossier." +
-                        "\n\nJust type your ID (dossier number: number/year, Ex: 1763/2013) below:"));
+                sendMessageBack(romanianDossierCheckerService.prepareMessage(update.getMessage().getChatId(), WELCOMING_MESSAGE));
                 break;
             default:
-                sendMessageBack(romanianDossierCheckerService.prepareMessage(update.getMessage().getChatId(), "I am looking for a dossier by ID: " + update.getMessage().getText()
-                        + "\nMostly it takes up to 7 minutes. Make yourself a cup of coffee :)."));
+                sendMessageBack(romanianDossierCheckerService.prepareMessage(update.getMessage().getChatId(), generateLookupMessage(update.getMessage().getText())));
                 findSubjectByDossierIdAndSendMessage(update);
                 break;
         }
     }
 
+    private Subject findSubjectByDossierId(String dossierId) {
+        return romanianDossierCheckerService.findSubjectByDossierId(dossierId);
+    }
+
     private void findSubjectByDossierIdAndSendMessage(Update update) {
-        List<Subject> subjects = romanianDossierCheckerService.findSubjectByDossierId(update.getMessage().getText());
-        System.out.println("Subjects are: " + subjects);
-        sendMessageBack(romanianDossierCheckerService.prepareMessage(update.getMessage().getChatId(), romanianDossierCheckerService.getResponseMessage(subjects)));
+        Subject subject = findSubjectByDossierId(update.getMessage().getText());
+        LOGGER.info("Found subject by id {}: {}", update.getMessage().getText(), subject);
+        sendMessageBack(romanianDossierCheckerService.prepareMessage(update.getMessage().getChatId(), romanianDossierCheckerService.getResponseMessage(subject)));
     }
 
     private void sendMessageBack(SendMessage sendMessage) {
         try {
             execute(sendMessage);
         } catch (TelegramApiException e) {
-            System.out.println("Error during sending message: " + e);
+            LOGGER.debug("Error during sending message: {}", e);
         }
     }
 }

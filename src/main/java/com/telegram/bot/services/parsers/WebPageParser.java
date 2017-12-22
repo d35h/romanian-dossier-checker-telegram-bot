@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class WebPageParser {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebPageParser.class);
 
     private final String ministryDossierUrl;
 
@@ -39,11 +43,12 @@ public class WebPageParser {
         final String regexPdfForSpecifiedYear = "a[href~=/images/.+" + webParserYear + ".*\\.pdf$]";
 
         try {
+            LOGGER.info("Trying to get web page from the specified URL: {}", ministryDossierUrl);
             final Document doc = Jsoup.connect(ministryDossierUrl).get();
             Elements elements = doc.select(regexPdfForSpecifiedYear);
             return elements.stream().map(link -> link.attr(A_TAG_RESOLVER)).collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.info("Failed when trying to get web page from the specified URL{} : {}", ministryDossierUrl, e);
         }
 
         return new ArrayList<>();
