@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,18 +38,19 @@ public class WebPageParser {
         this.webParserYear = webParserYear;
     }
 
-    public List<String> gePdfLinks() {
+    public List<String> getPdfLinks() {
         final String regexPdfForSpecifiedYear = "a[href~=/images/.+" + webParserYear + ".*\\.pdf$]";
-
         try {
             LOGGER.info("Trying to get web page from the specified URL: {}", ministryDossierUrl);
-            final Document doc = Jsoup.connect(ministryDossierUrl).get();
-            Elements elements = doc.select(regexPdfForSpecifiedYear);
-            return elements.stream().map(link -> link.attr(A_TAG_RESOLVER)).collect(Collectors.toList());
+            return getDocumentByUrl(ministryDossierUrl).select(regexPdfForSpecifiedYear).stream().map(link -> link.attr(A_TAG_RESOLVER)).collect(Collectors.toList());
         } catch (IOException e) {
             LOGGER.info("Failed when trying to get web page from the specified URL{} : {}", ministryDossierUrl, e);
         }
 
         return new ArrayList<>();
+    }
+
+    public Document getDocumentByUrl(String url) throws IOException {
+        return Jsoup.connect(url).get();
     }
 }

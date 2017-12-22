@@ -8,7 +8,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.io.EmptyInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +18,9 @@ public class UriParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UriParser.class);
 
-    public InputStream getStreamFromPdfUri(URI urlToFetch)  {
+    public InputStream getStreamFromPdfUri(URI urlToFetch, HttpClient httpclient)  {
         try {
             LOGGER.info("Trying to get stream from the specified URI: {}", urlToFetch);
-            HttpClient httpclient = HttpClientBuilder.create().build();
             HttpResponse response = httpclient.execute(new HttpGet(urlToFetch));
             HttpEntity entity = response.getEntity();
             if (entity != null) {
