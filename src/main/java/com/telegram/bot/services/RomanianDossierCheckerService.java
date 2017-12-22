@@ -1,8 +1,11 @@
 package com.telegram.bot.services;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import static com.telegram.bot.utils.MessageUtils.*;
 
+import java.net.URI;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -13,6 +16,8 @@ import com.telegram.bot.services.parsers.WebPageParser;
 
 @Service
 public class RomanianDossierCheckerService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RomanianDossierCheckerService.class);
 
     private final SubjectHandler subjectHandler;
 
@@ -25,11 +30,16 @@ public class RomanianDossierCheckerService {
         this.webPageParser = webPageParser;
     }
 
-    public List<Subject> findSubjectByDossierId(String dossierId) {
-        return subjectHandler.getDossierSubjectsByUri(webPageParser.gePdfLinks())
+    public Subject findSubjectByDossierId(String dossierId) {
+        LOGGER.info("Looking for a dossier by the following id: {}", dossierId);
+        return webPageParser.gePdfLinks()
                 .stream()
-                .filter(subject -> subject.getId().equalsIgnoreCase(dossierId))
-                .collect(Collectors.toList());
+                .flatMap(link -> subjectHandler.getDossierSubjectsByUri(URI.create(link))
+                        .stream()
+                        .filter(subj -> subj.getId().equalsIgnoreCase(dossierId))
+                )
+                .findAny()
+                .orElse(null);
     }
 
     public SendMessage prepareMessage(long chatId, String messageToSend) {
@@ -44,7 +54,7 @@ public class RomanianDossierCheckerService {
         return update.getMessage().getChatId() != null && update.getMessage().hasText();
     }
 
-    public String getResponseMessage(List<Subject> foundSubjects) {
-        return foundSubjects.isEmpty() ? "You are not on the list, but no worries soon you will be." : "You are on the list!\nSee the details: " + foundSubjects.get(0) + ".\nCool, huh?";
+    public String getResponseMessage(Subject foundSubjects) {
+        return foundSubjects == null ? NOT_ON_THE_LIST_MESSAGE : generateSuccessfulLookupMessage(foundSubjects);
     }
 }

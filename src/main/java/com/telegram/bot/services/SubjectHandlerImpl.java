@@ -5,11 +5,12 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,8 @@ import com.telegram.bot.utils.SubjectUtils;
 
 @Service
 public class SubjectHandlerImpl implements SubjectHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubjectHandlerImpl.class);
 
     private final static String SPLITTER_SYMBOL = "\\.|\\;";
 
@@ -30,29 +33,26 @@ public class SubjectHandlerImpl implements SubjectHandler {
     }
 
     @Override
-    public List<Subject> getDossierSubjectsByUri(List<String> pdfUris) {
-        return pdfUris
-                .stream()
-                .flatMap(pdfUri -> getDossierSubjectsFromUri(URI.create(pdfUri))
-                        .stream())
-                .collect(Collectors.toList());
+    public List<Subject> getDossierSubjectsByUri(URI pdfUri) {
+        return getDossierSubjectsFromUri(pdfUri);
     }
 
     private List<Subject> getDossierSubjectsFromUri(URI pdfUri)  {
-        List<Subject> subjects = new ArrayList<>();
+
         try (PDDocument document = PDDocument.load(getInputStreamFromUri(pdfUri))) {
             if (!document.isEncrypted()) {
-                System.out.println("Processing: " + pdfUri);
+                LOGGER.info("Processing: {}", pdfUri);
+                List<Subject> subjects = new ArrayList<>();
                 for (String candidate : getArrayOfStringFromPdf(document)) {
                     addSubjectFromStringToList(subjects, candidate, pdfUri.toString());
                 }
                 return subjects;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.debug("Failed while processing: {}", pdfUri);
         }
 
-        return subjects;
+        return new ArrayList<>();
     }
 
     private void addSubjectFromStringToList(List<Subject> subjects, String candidate, String pdfUri) {
@@ -71,6 +71,6 @@ public class SubjectHandlerImpl implements SubjectHandler {
     }
 
     private InputStream getInputStreamFromUri(URI pdfUri) throws IOException {
-        return uriParser.getStreamFromPdfUrl(pdfUri);
+        return uriParser.getStreamFromPdfUri(pdfUri);
     }
 }

@@ -10,13 +10,18 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.io.EmptyInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UriParser {
 
-    public InputStream getStreamFromPdfUrl(URI urlToFetch)  {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UriParser.class);
+
+    public InputStream getStreamFromPdfUri(URI urlToFetch)  {
         try {
+            LOGGER.info("Trying to get stream from the specified URI: {}", urlToFetch);
             HttpClient httpclient = HttpClientBuilder.create().build();
             HttpResponse response = httpclient.execute(new HttpGet(urlToFetch));
             HttpEntity entity = response.getEntity();
@@ -24,7 +29,7 @@ public class UriParser {
                 return entity.getContent();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.debug("Failed when getting stream from the specified URI {}: {}", urlToFetch, e);
         }
 
         return EmptyInputStream.INSTANCE;
