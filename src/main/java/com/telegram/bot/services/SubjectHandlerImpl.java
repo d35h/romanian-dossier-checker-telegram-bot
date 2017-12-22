@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
@@ -38,11 +39,10 @@ public class SubjectHandlerImpl implements SubjectHandler {
     }
 
     private List<Subject> getDossierSubjectsFromUri(URI pdfUri)  {
-
+        List<Subject> subjects = new ArrayList<>();
         try (PDDocument document = PDDocument.load(getInputStreamFromUri(pdfUri))) {
             if (!document.isEncrypted()) {
                 LOGGER.info("Processing: {}", pdfUri);
-                List<Subject> subjects = new ArrayList<>();
                 for (String candidate : getArrayOfStringFromPdf(document)) {
                     addSubjectFromStringToList(subjects, candidate, pdfUri.toString());
                 }
@@ -52,7 +52,7 @@ public class SubjectHandlerImpl implements SubjectHandler {
             LOGGER.debug("Failed while processing: {}", pdfUri);
         }
 
-        return new ArrayList<>();
+        return subjects;
     }
 
     private void addSubjectFromStringToList(List<Subject> subjects, String candidate, String pdfUri) {
@@ -71,6 +71,6 @@ public class SubjectHandlerImpl implements SubjectHandler {
     }
 
     private InputStream getInputStreamFromUri(URI pdfUri) throws IOException {
-        return uriParser.getStreamFromPdfUri(pdfUri);
+        return uriParser.getStreamFromPdfUri(pdfUri, HttpClientBuilder.create().build());
     }
 }

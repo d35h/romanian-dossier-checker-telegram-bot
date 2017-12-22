@@ -32,7 +32,7 @@ public class RomanianDossierCheckerService {
 
     public Subject findSubjectByDossierId(String dossierId) {
         LOGGER.info("Looking for a dossier by the following id: {}", dossierId);
-        return webPageParser.gePdfLinks()
+        return webPageParser.getPdfLinks()
                 .stream()
                 .flatMap(link -> subjectHandler.getDossierSubjectsByUri(URI.create(link))
                         .stream()
